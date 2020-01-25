@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #encoding:utf8
 
+from treelib import Node, Tree
 import random
 
 """
@@ -18,47 +19,35 @@ class TreeNode():
         self.max = 0
 
     def __str__(self):
-        return "max:{max}, interval:({low},{high})".format(
+        return "[{low},{high}], max:{max}".format(
                 max=self.max, low=self.low, high=self.high)
 
-def insert_left_node(node, new):
+def insert_node(node, direct, new):
     """
     insert to the correct place
     update max value as well
     """
-    node.max = max(new.high, node.high)
-    if node.left == None:
-        node.left = new
+    node.max = max(new.high, node.high, node.max)
+    if getattr(node, direct) == None:
+        setattr(node, direct, new)
     else: # insert into left subtree
-        node = node.left
-        if node.low < new.low:
-            insert_left_node(node, new)
+        node = getattr(node, direct)
+        if new.low < node.low:
+            insert_node(node, "left", new)
         else:
-            insert_right_node(node, new)
+            insert_node(node, "right", new)
 
-def insert_right_node(node, new):
-    """
-    insert to the correct place
-    update max value as well
-    """
-    node.max = max(new.high, node.high)
-    if node.right == None:
-        node.right = new
-    else: # insert into left subtree
-        node = node.right
-        if node.low < new.low:
-            insert_left_node(node, new)
-        else:
-            insert_right_node(node, new)
-
-def traverse(node, func):
-    func(node)
-    if node.left:
-        print("left")
-        traverse(node.left, func)
-    if node.right:
-        print("right")
-        traverse(node.right, func)
+def pprint_tree(node, file=None, _prefix="", _last=True):
+    print(_prefix, "`- " if _last else "|- ", str(node), sep="", file=file)
+    if not node:
+        return
+    if not node.left and not node.right:
+        return
+    _prefix += "   " if _last else "|  "
+    print("right:", end="")
+    pprint_tree(node.right, file, _prefix, False)
+    print("left: ", end="")
+    pprint_tree(node.left, file, _prefix, True)
 
 def build_tree(intervals):
     """
@@ -74,25 +63,41 @@ def build_tree(intervals):
     Root Node of the tree.
     """
     assert(len(intervals) > 0)
-    root = TreeNode(intervals[1][0], intervals[1][1])
+    root_interval = intervals[0]
+    root = TreeNode(root_interval[0], root_interval[1])
     for i in range(2, len(intervals)):
         interval = intervals[i]
         assert(interval[0] <= interval[1])
         new = TreeNode(interval[0], interval[1])
+        new.max = new.high
         if new.low < root.low:
-            insert_left_node(root, new)
+            insert_node(root, "left", new)
         else:
-            insert_right_node(root, new)
+            insert_node(root, "right", new)
     return root
 
-def print_node(node):
-    print(node)
+def check_tree(root_node):
+    assert(root_node)
+    if root_node.left:
+        left_node = root_node.left
+        assert(left_node.low < root_node.low)
+        assert(left_node.max <= root_node.max)
+        check_tree(left_node)
+    if root_node.right:
+        right_node = root_node.right
+        assert(right_node.low >= root_node.low)
+        assert(right_node.max <= root_node.max)
+        check_tree(right_node)
 
 def test_build_tree():
     intervals = create_intervals()
     print("intervals:", intervals)
+    print("=====================")
     result = build_tree(intervals)
-    traverse(result, print_node)
+    print("root: ", end="")
+    pprint_tree(result)
+    check_tree(result)
+    print("check pass")
 
 def create_intervals():
     MAX = 100
@@ -100,7 +105,9 @@ def create_intervals():
     intervals = []
     for i in range(1, size):
         low = random.randint(1, MAX)
-        high = random.randint(low, MAX)
+        high = random.randint(1, MAX)
+        if low > high:
+            low, high = high, low
         intervals.append((low, high))
     return intervals
 
