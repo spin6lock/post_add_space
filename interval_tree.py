@@ -89,6 +89,37 @@ def check_tree(root_node):
         assert(right_node.max <= root_node.max)
         check_tree(right_node)
 
+def search_tree(root_node, x):
+    """
+    search x in tree root by root_node
+
+    if root_node is None, return
+    if x in root_node interval, return
+    if root_node.left is not None, and root_node.left max is larger than x, go left
+    otherwise, go right
+    """
+    if not root_node:
+        return
+    if root_node.low <= x.low and x.high <= root_node.high:
+        return root_node
+    left_node = root_node.left
+    right_node = root_node.right
+    if left_node and x.high <= left_node.max:
+        return search_tree(left_node, x)
+    else:
+        return search_tree(right_node, x)
+    
+def search_interval(intervals, x):
+    """
+    iter over whole intervals and return intervals that contains x
+    """
+    LEFT = 0
+    RIGHT = 1
+    for interval in intervals:
+        if interval[LEFT] <= x.low and x.high <= interval[RIGHT]:
+            return interval
+    return
+
 def test_build_tree():
     intervals = create_intervals()
     print("intervals:", intervals)
@@ -99,13 +130,11 @@ def test_build_tree():
     check_tree(result)
     print("check pass")
 
-def create_intervals():
-    MAX = 100
-    size = 10
+def create_intervals(max_num, size):
     intervals = []
     for i in range(1, size):
-        low = random.randint(1, MAX)
-        high = random.randint(1, MAX)
+        low = random.randint(1, max_num)
+        high = random.randint(1, max_num)
         if low > high:
             low, high = high, low
         intervals.append((low, high))
@@ -119,8 +148,20 @@ def create_intervals():
     #compare those two result
 """
 def test():
-    pass
-
+    MAX = 100
+    size = 10
+    intervals = create_intervals(MAX, size)
+    t = random.randint(1, MAX)
+    target = TreeNode(t, t)
+    root = build_tree(intervals)
+    node = search_tree(root, target)
+    interval = search_interval(intervals, target)
+    if node:
+        node_interval = (node.low, node.high)
+    else:
+        node_interval = None
+    assert(node_interval == interval)
+    
 if __name__ == "__main__":
-    test_build_tree()
+    test()
 
