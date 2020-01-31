@@ -73,10 +73,11 @@ def calc_height(node):
 
 def recursive_calc_max(node):
     if not node:
-        return 0
+        return None
     left_max = recursive_calc_max(node.left)
     right_max = recursive_calc_max(node.right)
-    node.max = max(left_max, right_max, node.max)
+    lst = [left_max, right_max, node.max]
+    node.max = max([i for i in lst if i is not None])
     return node.max
 
 def insert_node(node, new):
@@ -227,7 +228,6 @@ def test():
     count = 1000
     for _ in range(count):
         single_test()
-        test_build_tree()
 
 if __name__ == "__main__":
     test()
