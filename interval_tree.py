@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 #encoding:utf8
 
-from treelib import Node, Tree
 import random
 
 """
@@ -22,20 +21,22 @@ class TreeNode():
         return "[{low},{high}], max:{max}".format(
                 max=self.max, low=self.low, high=self.high)
 
-def insert_node(node, direct, new):
+    def to_interval(self):
+        return (self.low, self.high)
+
+def insert_node(node, new):
     """
     insert to the correct place
     update max value as well
     """
+    if not node:
+        return new
     node.max = max(new.high, node.high, node.max)
-    if getattr(node, direct) == None:
-        setattr(node, direct, new)
-    else: # insert into left subtree
-        node = getattr(node, direct)
-        if new.low < node.low:
-            insert_node(node, "left", new)
-        else:
-            insert_node(node, "right", new)
+    if new.low < node.low:
+        node.left = insert_node(node.left, new)
+    else:
+        node.right = insert_node(node.right, new)
+    return node
 
 def pprint_tree(node, file=None, _prefix="", _last=True):
     print(_prefix, "`- " if _last else "|- ", str(node), sep="", file=file)
@@ -63,17 +64,13 @@ def build_tree(intervals):
     Root Node of the tree.
     """
     assert(len(intervals) > 0)
-    root_interval = intervals[0]
-    root = TreeNode(root_interval[0], root_interval[1])
-    for i in range(2, len(intervals)):
+    root = None
+    for i in range(0, len(intervals)):
         interval = intervals[i]
         assert(interval[0] <= interval[1])
         new = TreeNode(interval[0], interval[1])
         new.max = new.high
-        if new.low < root.low:
-            insert_node(root, "left", new)
-        else:
-            insert_node(root, "right", new)
+        root = insert_node(root, new)
     return root
 
 def check_tree(root_node):
@@ -115,13 +112,18 @@ def search_interval(intervals, x):
     """
     LEFT = 0
     RIGHT = 1
+    results = []
     for interval in intervals:
         if interval[LEFT] <= x.low and x.high <= interval[RIGHT]:
-            return interval
-    return
+            results.append(interval)
+    if results:
+        return results
+    return None
 
 def test_build_tree():
-    intervals = create_intervals()
+    MAX = 100
+    SIZE = 10
+    intervals = create_intervals(MAX, SIZE)
     print("intervals:", intervals)
     print("=====================")
     result = build_tree(intervals)
@@ -147,21 +149,30 @@ def create_intervals(max_num, size):
     #use old fashion method to find out if it's inside
     #compare those two result
 """
-def test():
+def single_test():
     MAX = 100
-    size = 10
-    intervals = create_intervals(MAX, size)
+    SIZE = 10
+    intervals = create_intervals(MAX, SIZE)
     t = random.randint(1, MAX)
     target = TreeNode(t, t)
     root = build_tree(intervals)
     node = search_tree(root, target)
-    interval = search_interval(intervals, target)
-    if node:
-        node_interval = (node.low, node.high)
-    else:
-        node_interval = None
-    assert(node_interval == interval)
+    intervals = search_interval(intervals, target)
+    node_interval = node and node.to_interval() or None
+    if not node_interval and not intervals:
+        return
+    if node_interval not in intervals:
+        print("=======================")
+        pprint_tree(root)
+        print("target:", target)
+        print("node interval:", node_interval)
+        print("match intervals:", intervals)
     
+def test():
+    count = 100
+    for i in range(count):
+        single_test()
+
 if __name__ == "__main__":
     test()
 
